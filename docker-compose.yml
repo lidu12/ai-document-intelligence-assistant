@@ -1,0 +1,95 @@
+# ------------------------------------------------------------------------------
+# Docker Compose Configuration — AI Document Intelligence Assistant
+# ------------------------------------------------------------------------------
+# Manages multi-container orchestration for PostgreSQL (pgvector) and FastAPI backend.
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database with pgvector Extension
+  # ----------------------------------------------------------------------------
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: doc_intelligence_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: doc_intelligence
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d doc_intelligence"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # ----------------------------------------------------------------------------
+  # 2. FastAPI Backend Application
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: doc_intelligence_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=True
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/doc_intelligence
+      - SECRET_KEY=replace-with-a-secure-random-secret-key-at-least-32-chars-long
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - EMBEDDING_MODEL=models/text-embedding-004
+      - EMBEDDING_DIMENSION=768
+      - GENERATIVE_MODEL=gemini-1.5-flash
+      - MAX_UPLOAD_SIZE_MB=10
+      - CHUNK_SIZE_CHARS=1500
+      - CHUNK_OVERLAP_CHARS=200
+      - VECTOR_SEARCH_TOP_K=5
+      - SIMILARITY_THRESHOLD=0.60
+      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+    volumes:
+      # Mount backend code into container for hot-reloading during development
+      - ./backend/app:/app/app:ro
+    networks:
+      - app-network
+
+  # ----------------------------------------------------------------------------
+  # 3. Next.js Frontend Application
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: doc_intelligence_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    networks:
+      - app-network
+
+# ------------------------------------------------------------------------------
+# Persistent Volumes & Networks
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: doc_intelligence_postgres_data
+
+networks:
+  app-network:
+    name: doc_intelligence_network
+    driver: bridge
