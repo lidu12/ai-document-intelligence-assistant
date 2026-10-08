@@ -48,9 +48,9 @@ class Settings(BaseSettings):
     # 4. Google Gemini AI & Embeddings
     # --------------------------------------------------------------------------
     GEMINI_API_KEY: str = ""
-    EMBEDDING_MODEL: str = "models/text-embedding-004"
+    EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 768
-    GENERATIVE_MODEL: str = "gemini-1.5-flash"
+    GENERATIVE_MODEL: str = "models/gemini-3.6-flash"
 
     # --------------------------------------------------------------------------
     # 5. Document Ingestion & Chunking
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     # 6. RAG Retrieval & Similarity Search
     # --------------------------------------------------------------------------
     VECTOR_SEARCH_TOP_K: int = 5
-    SIMILARITY_THRESHOLD: float = 0.60
+    SIMILARITY_THRESHOLD: float = 0.35
 
     # --------------------------------------------------------------------------
     # 7. CORS Origins

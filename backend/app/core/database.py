@@ -39,6 +39,7 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
     expire_on_commit=False,  # Prevents attributes from expiring after commit (essential for async)
 )
+async_session_factory = AsyncSessionLocal
 
 
 # ------------------------------------------------------------------------------

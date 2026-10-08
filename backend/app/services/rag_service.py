@@ -39,23 +39,26 @@ class RAGService:
         Returns:
             ChatResponse: Grounded answer with structured citation sources.
         """
+        # Extract normalized prompt text
+        prompt_text = request.query_text
+
         # 1. Retrieve or create the conversation thread
         conversation = await self._get_or_create_conversation(
-            db, user_id, request.conversation_id, request.message
+            db, user_id, request.conversation_id, prompt_text
         )
 
         # 2. Record the incoming user message in the database
         user_message = Message(
             conversation_id=conversation.id,
             role="user",
-            content=request.message,
+            content=prompt_text,
             sources=None,
         )
         db.add(user_message)
         await db.flush()  # Flush to assign user_message.id without committing
 
         # 3. Generate query vector embedding using Gemini API
-        query_embedding = embedding_service.get_query_embedding(request.message)
+        query_embedding = embedding_service.get_query_embedding(prompt_text)
 
         # 4. Search PostgreSQL for the most relevant document chunks
         top_k = request.top_k or settings.VECTOR_SEARCH_TOP_K
@@ -65,7 +68,7 @@ class RAGService:
             query_embedding=query_embedding,
             top_k=top_k,
             similarity_threshold=settings.SIMILARITY_THRESHOLD,
-            document_ids=request.document_ids,
+            document_ids=request.target_document_ids,
         )
 
         # 5. Generate grounded response from Gemini
@@ -77,7 +80,7 @@ class RAGService:
             citations: List[CitationSource] = []
         else:
             answer = await ai_service.generate_grounded_answer(
-                query=request.message,
+                query=prompt_text,
                 retrieved_chunks=retrieved_chunks,
             )
 

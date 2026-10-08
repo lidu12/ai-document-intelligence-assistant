@@ -6,11 +6,22 @@ pre-authenticated JWT fixtures, and offline Google Gemini AI mock interceptors.
 
 import asyncio
 import os
+import sys
 from typing import AsyncGenerator, Dict, Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+
+# Ensure backend directory is on Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Configure test environment variables prior to importing application modules
+os.environ["ENVIRONMENT"] = "testing"
+os.environ["DEBUG"] = "False"
+os.environ["SECRET_KEY"] = "test-secret-key-32-chars-long-for-testing-only-12345"
+os.environ["GEMINI_API_KEY"] = "mock-gemini-api-key-for-unit-tests"
+
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -19,12 +30,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.ext.compiler import compiles
-
-# Configure test environment variables prior to importing application modules
-os.environ["ENVIRONMENT"] = "testing"
-os.environ["DEBUG"] = "False"
-os.environ["SECRET_KEY"] = "test-secret-key-32-chars-long-for-testing-only-12345"
-os.environ["GEMINI_API_KEY"] = "mock-gemini-api-key-for-unit-tests"
 
 from app.api.deps import get_db
 from app.core.security import create_access_token, hash_password
@@ -62,18 +67,12 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 
-# ------------------------------------------------------------------------------
-# 3. Pytest Event Loop & Database Fixtures
-# ------------------------------------------------------------------------------
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Creates a session-scoped asyncio event loop for async test execution."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+import pytest_asyncio
 
-
-@pytest.fixture(scope="function")
+# ------------------------------------------------------------------------------
+# 3. Database Fixtures
+# ------------------------------------------------------------------------------
+@pytest_asyncio.fixture(scope="function")
 async def test_db() -> AsyncGenerator[AsyncSession, None]:
     """Yields a fresh, isolated database session with all tables created in-memory."""
     async with test_engine.begin() as conn:
@@ -90,7 +89,7 @@ async def test_db() -> AsyncGenerator[AsyncSession, None]:
 # ------------------------------------------------------------------------------
 # 4. Async HTTP Test Client with FastAPI Dependency Overrides
 # ------------------------------------------------------------------------------
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Creates an AsyncClient that communicates directly with FastAPI using test_db."""
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -108,7 +107,7 @@ async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 # ------------------------------------------------------------------------------
 # 5. User & Authentication Fixtures
 # ------------------------------------------------------------------------------
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def test_user(test_db: AsyncSession) -> User:
     """Creates and inserts a standard verified active user into the test database."""
     user = User(
@@ -123,14 +122,14 @@ async def test_user(test_db: AsyncSession) -> User:
     return user
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def auth_headers(test_user: User) -> Dict[str, str]:
     """Generates valid Bearer Authorization HTTP headers for the test user."""
     access_token = create_access_token(subject=test_user.id)
     return {"Authorization": f"Bearer {access_token}"}
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def second_test_user(test_db: AsyncSession) -> User:
     """Creates a second distinct user to test multi-tenant document authorization."""
     user = User(
@@ -145,7 +144,7 @@ async def second_test_user(test_db: AsyncSession) -> User:
     return user
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def second_auth_headers(second_test_user: User) -> Dict[str, str]:
     """Generates Bearer Authorization HTTP headers for the second user."""
     access_token = create_access_token(subject=second_test_user.id)
@@ -159,18 +158,27 @@ async def second_auth_headers(second_test_user: User) -> Dict[str, str]:
 def mock_gemini_services():
     """Automatically mocks all Gemini API network calls during test runs.
 
-    - Embeddings: Returns a deterministic 768-dimensional float vector.
+    - Embeddings: Returns deterministic 768-dimensional float vectors.
     - AI Chat: Returns a grounded answer string.
     """
     mock_vector = [0.05] * 768
 
+    def mock_batch_embeddings(texts, batch_size=50):
+        return [[0.05] * 768 for _ in texts]
+
     with patch(
-        "app.services.embedding_service.EmbeddingService.get_embedding",
-        new_callable=AsyncMock,
+        "app.services.embedding_service.EmbeddingService.get_query_embedding",
         return_value=mock_vector,
+    ), patch(
+        "app.services.embedding_service.EmbeddingService.get_document_embeddings_batch",
+        side_effect=mock_batch_embeddings,
     ), patch(
         "app.services.ai_service.AIService.generate_grounded_answer",
         new_callable=AsyncMock,
         return_value="This is a verified test answer grounded in the uploaded document.",
+    ), patch(
+        "app.services.rag_service.vector_service.search_similar_chunks",
+        new_callable=AsyncMock,
+        return_value=[],
     ):
         yield

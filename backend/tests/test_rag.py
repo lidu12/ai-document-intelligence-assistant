@@ -37,18 +37,17 @@ async def test_chat_query_creates_conversation_and_citations(client: AsyncClient
 
     mock_retrieved_chunks = [
         RetrievedChunk(
-            id=1,
+            chunk_id=1,
             document_id=doc_id,
-            chunk_index=0,
-            content="Retrieval-Augmented Generation (RAG) retrieves facts from external knowledge.",
+            document_name="rag_guide.txt",
             page_number=1,
-            similarity=0.88,
-            filename="rag_guide.txt",
+            content="Retrieval-Augmented Generation (RAG) retrieves facts from external knowledge.",
+            similarity_score=0.88,
         )
     ]
 
     with patch(
-        "app.services.vector_service.VectorService.search_similar_chunks",
+        "app.services.rag_service.vector_service.search_similar_chunks",
         new_callable=AsyncMock,
         return_value=mock_retrieved_chunks,
     ):
@@ -65,7 +64,7 @@ async def test_chat_query_creates_conversation_and_citations(client: AsyncClient
         assert "sources" in data
         assert len(data["sources"]) == 1
         assert data["sources"][0]["document_id"] == doc_id
-        assert data["sources"][0]["filename"] == "rag_guide.txt"
+        assert data["sources"][0]["document_name"] == "rag_guide.txt"
         assert data["sources"][0]["page_number"] == 1
         assert data["sources"][0]["similarity_score"] == 0.88
 
@@ -77,18 +76,17 @@ async def test_chat_query_multi_turn_conversation(client: AsyncClient, auth_head
 
     mock_retrieved_chunks = [
         RetrievedChunk(
-            id=1,
+            chunk_id=1,
             document_id=doc_id,
-            chunk_index=0,
-            content="FastAPI is a modern web framework.",
+            document_name="rag_guide.txt",
             page_number=1,
-            similarity=0.85,
-            filename="rag_guide.txt",
+            content="FastAPI is a modern web framework.",
+            similarity_score=0.85,
         )
     ]
 
     with patch(
-        "app.services.vector_service.VectorService.search_similar_chunks",
+        "app.services.rag_service.vector_service.search_similar_chunks",
         new_callable=AsyncMock,
         return_value=mock_retrieved_chunks,
     ):
@@ -117,7 +115,7 @@ async def test_chat_query_multi_turn_conversation(client: AsyncClient, auth_head
 async def test_chat_query_no_relevant_chunks_fallback(client: AsyncClient, auth_headers: dict):
     """Verifies safe fallback message when no relevant chunks exceed similarity threshold."""
     with patch(
-        "app.services.vector_service.VectorService.search_similar_chunks",
+        "app.services.rag_service.vector_service.search_similar_chunks",
         new_callable=AsyncMock,
         return_value=[],
     ):
@@ -126,7 +124,7 @@ async def test_chat_query_no_relevant_chunks_fallback(client: AsyncClient, auth_
         assert response.status_code == 200
 
         data = response.json()
-        assert "not have enough information" in data["answer"].lower()
+        assert "not find any relevant information" in data["answer"].lower()
         assert len(data["sources"]) == 0
 
 

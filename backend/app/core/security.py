@@ -43,6 +43,10 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
+# Alias for backwards compatibility
+hash_password = get_password_hash
+
+
 # ------------------------------------------------------------------------------
 # 2. JSON Web Token (JWT) Utilities
 # ------------------------------------------------------------------------------

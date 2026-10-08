@@ -47,6 +47,7 @@ class EmbeddingService:
                 model=self.model,
                 content=cleaned_query,
                 task_type="RETRIEVAL_QUERY",
+                output_dimensionality=self.dimension,
             )
             embedding = response["embedding"]
             return embedding
@@ -87,6 +88,7 @@ class EmbeddingService:
                     model=self.model,
                     content=batch,
                     task_type="RETRIEVAL_DOCUMENT",
+                    output_dimensionality=self.dimension,
                 )
                 embeddings = response["embedding"]
 

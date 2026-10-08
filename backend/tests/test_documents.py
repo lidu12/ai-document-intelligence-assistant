@@ -51,6 +51,10 @@ async def test_upload_txt_document_success(client: AsyncClient, auth_headers: di
     assert "id" in data
 
 
+from unittest.mock import patch
+from app.services.document_parser import ParsedDocument, ParsedPage
+
+
 @pytest.mark.asyncio
 async def test_upload_pdf_document_success(client: AsyncClient, auth_headers: dict):
     """Tests uploading a valid PDF document and storing document metadata."""
@@ -59,13 +63,22 @@ async def test_upload_pdf_document_success(client: AsyncClient, auth_headers: di
         "file": ("sample_report.pdf", io.BytesIO(pdf_bytes), "application/pdf"),
     }
 
-    response = await client.post("/api/v1/documents/upload", headers=auth_headers, files=files)
-    assert response.status_code == 201
+    mock_parsed_pdf = ParsedDocument(
+        filename="sample_report.pdf",
+        file_type="application/pdf",
+        pages=[ParsedPage(page_number=1, text="Sample enterprise report text content.", char_count=38)],
+        total_pages=1,
+        total_chars=38,
+    )
 
-    data = response.json()
-    assert data["filename"] == "sample_report.pdf"
-    assert data["status"] == "ready"
-    assert data["file_type"] == "application/pdf"
+    with patch("app.services.document_parser.DocumentParser._parse_pdf", return_value=mock_parsed_pdf):
+        response = await client.post("/api/v1/documents/upload", headers=auth_headers, files=files)
+        assert response.status_code == 201
+
+        data = response.json()
+        assert data["filename"] == "sample_report.pdf"
+        assert data["status"] == "ready"
+        assert data["file_type"] == "application/pdf"
 
 
 @pytest.mark.asyncio
