@@ -69,18 +69,40 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # 7. CORS Origins
     # --------------------------------------------------------------------------
-    CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: Union[List[str], str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://lidu12.github.io",
+    ]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]], info: ValidationInfo) -> List[str]:
         """Ensures CORS_ORIGINS is always parsed into a list of strings,
-
-        even if provided as a comma-separated string in .env.
+        safely handling JSON arrays, comma-separated strings, or list literals.
         """
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",") if i.strip()]
-        return v
+        import json
+        origins: List[str] = []
+        if isinstance(v, str):
+            v_trimmed = v.strip()
+            if v_trimmed.startswith("[") and v_trimmed.endswith("]"):
+                try:
+                    parsed = json.loads(v_trimmed)
+                    if isinstance(parsed, list):
+                        origins = [str(item).strip() for item in parsed if item]
+                except Exception:
+                    origins = [i.strip(" '\"") for i in v_trimmed.strip("[]").split(",") if i.strip()]
+            else:
+                origins = [i.strip() for i in v_trimmed.split(",") if i.strip()]
+        elif isinstance(v, (list, tuple)):
+            origins = [str(item).strip() for item in v if item]
+
+        # Ensure lidu12.github.io is always allowed
+        gh_origin = "https://lidu12.github.io"
+        if gh_origin not in origins and "*" not in origins:
+            origins.append(gh_origin)
+
+        return origins
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

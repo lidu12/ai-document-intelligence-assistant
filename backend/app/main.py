@@ -94,9 +94,14 @@ app = FastAPI(
 # ------------------------------------------------------------------------------
 # 4. CORS (Cross-Origin Resource Sharing) Middleware
 # ------------------------------------------------------------------------------
+cors_origins = list(settings.CORS_ORIGINS) if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
+if "https://lidu12.github.io" not in cors_origins:
+    cors_origins.append("https://lidu12.github.io")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
