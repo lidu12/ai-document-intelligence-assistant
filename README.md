@@ -6,12 +6,26 @@ The system allows users to upload unstructured documents (PDFs, text files), aut
 
 ---
 
+## 🌐 Live Production Deployment
+
+The application is deployed live in production:
+
+| Component | Provider | Live URL | Status |
+| :--- | :--- | :--- | :---: |
+| **Frontend Web App** | GitHub Pages | **[https://lidu12.github.io/ai-document-intelligence-assistant/](https://lidu12.github.io/ai-document-intelligence-assistant/)** | 🟢 Live |
+| **Backend API** | Render Cloud | **[https://ai-document-intelligence-assistant-1.onrender.com](https://ai-document-intelligence-assistant-1.onrender.com)** | 🟢 Live |
+| **Interactive API Docs** | Swagger / OpenAPI | **[https://ai-document-intelligence-assistant-1.onrender.com/docs](https://ai-document-intelligence-assistant-1.onrender.com/docs)** | 🟢 Live |
+| **API Health Check** | Render Cloud | **[https://ai-document-intelligence-assistant-1.onrender.com/health](https://ai-document-intelligence-assistant-1.onrender.com/health)** | 🟢 Healthy |
+
+---
+
 ## ✨ Features & Architecture
 
 - **Strict Multi-Tenant Isolation**: Vector search and metadata queries are strictly filtered by authenticated `user_id`.
 - **PostgreSQL + `pgvector`**: Embeddings and relational metadata live in the same ACID-compliant database.
 - **Automated Ingestion Pipeline**: In-memory PDF/TXT extraction with recursive character chunking and sliding-window overlap.
 - **Grounded Answers & Citations**: LLM responses reference exact source chunks with document titles, page numbers, and excerpts.
+- **Automated CI/CD**: Fully automated deployment workflow via GitHub Actions.
 - **Conflict-Free Port Configuration**: Database is mapped to host port **`5433`** by default to prevent conflicts with other local PostgreSQL instances.
 
 ```text
@@ -105,14 +119,23 @@ npm run dev
 
 ---
 
-## 🌐 Application URLs
+## 🌐 Application Endpoints Reference
 
+### Production (Cloud)
 | Service | URL | Notes |
 | :--- | :--- | :--- |
-| **Frontend Web App** | [http://localhost:3000](http://localhost:3000) | Document management & Citation Chat |
-| **Interactive API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI for exploring and testing endpoints |
-| **Alternative API Docs** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | ReDoc API documentation |
-| **Health Check** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | Verifies database and vector extension connectivity |
+| **Frontend Web App** | [https://lidu12.github.io/ai-document-intelligence-assistant/](https://lidu12.github.io/ai-document-intelligence-assistant/) | Hosted on GitHub Pages |
+| **Interactive API Docs** | [https://ai-document-intelligence-assistant-1.onrender.com/docs](https://ai-document-intelligence-assistant-1.onrender.com/docs) | Swagger UI on Render |
+| **Alternative API Docs** | [https://ai-document-intelligence-assistant-1.onrender.com/redoc](https://ai-document-intelligence-assistant-1.onrender.com/redoc) | ReDoc API documentation |
+| **Health Check** | [https://ai-document-intelligence-assistant-1.onrender.com/health](https://ai-document-intelligence-assistant-1.onrender.com/health) | Live DB & vector health status |
+
+### Local Development
+| Service | URL | Notes |
+| :--- | :--- | :--- |
+| **Frontend Web App** | [http://localhost:3000](http://localhost:3000) | Next.js development server |
+| **Interactive API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Local Swagger UI |
+| **Alternative API Docs** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Local ReDoc |
+| **Health Check** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | Local health status |
 
 ---
 
