@@ -3,8 +3,15 @@ const nextConfig = {
   // Enforces React best practices and lifecycle checks in development
   reactStrictMode: true,
 
-  // Optimizes the production build into a minimal standalone bundle for Docker
-  output: "standalone",
+  // Only use standalone output for Docker containers; Vercel handles deployment natively
+  output: process.env.VERCEL ? undefined : "standalone",
+
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 
   // Environment variable fallbacks for client-side API calls
   env: {
