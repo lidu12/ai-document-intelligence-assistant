@@ -17,8 +17,11 @@ from app.core.config import settings
 
 # ------------------------------------------------------------------------------
 # 1. Asynchronous SQLAlchemy Engine
-# ------------------------------------------------------------------------------
-# create_async_engine manages the underlying pool of database connections.
+# Configure connect_args for asyncpg compatibility with cloud poolers (e.g. Supabase, PgBouncer)
+connect_args = {}
+if "asyncpg" in settings.DATABASE_URL:
+    connect_args["statement_cache_size"] = 0
+
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DATABASE_ECHO_SQL,  # Logs SQL statements if enabled in settings
@@ -26,6 +29,7 @@ engine: AsyncEngine = create_async_engine(
     pool_pre_ping=True,               # Tests connections before using them to prevent stale connection errors
     pool_size=10,                     # Maximum number of permanent connections in the pool
     max_overflow=20,                  # Additional temporary connections allowed during traffic spikes
+    connect_args=connect_args,
 )
 
 # ------------------------------------------------------------------------------

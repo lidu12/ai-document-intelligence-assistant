@@ -82,6 +82,20 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_database_url(cls, v: str, info: ValidationInfo) -> str:
+        """Normalizes cloud PostgreSQL connection strings (e.g. Supabase, Render, Neon)
+        to use the asynchronous asyncpg driver scheme.
+        """
+        if isinstance(v, str):
+            # Standardize postgresql:// or postgres:// to postgresql+asyncpg://
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     @property
     def max_upload_size_bytes(self) -> int:
         """Helper property: calculates the maximum upload size in bytes."""
