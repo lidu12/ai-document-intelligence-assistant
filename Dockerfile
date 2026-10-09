@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy backend app source code
 COPY backend/app ./app
 
-RUN addgroup --system appgroup && adduser --system --group appgroup appuser
+RUN useradd -m -u 1000 appuser
 USER appuser
 
 EXPOSE 8000

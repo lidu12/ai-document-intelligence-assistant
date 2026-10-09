@@ -36,7 +36,7 @@ COPY app ./app
 
 # 7. Security: Create and switch to a non-privileged system user
 # Running as root inside a production container is a security risk
-RUN addgroup --system appgroup && adduser --system --group appgroup appuser
+RUN useradd -m -u 1000 appuser
 USER appuser
 
 # 8. Expose Application Port
