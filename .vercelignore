@@ -1,0 +1,5 @@
+backend
+.pytest_cache
+docker-compose.yml
+render.yaml
+Dockerfile
