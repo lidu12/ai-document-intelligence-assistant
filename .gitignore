@@ -68,6 +68,8 @@ uploads/
 temp_uploads/
 *.pdf
 *.txt
+!requirements.txt
+!backend/requirements.txt
 *.log
 logs/
 *.sqlite3
